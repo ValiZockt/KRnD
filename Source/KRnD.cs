@@ -50,6 +50,25 @@ namespace KRnD
             throw new Exception("field " + fieldName + " not found in module " + module.moduleName);
         }
 
+        public static void AddVariant(Dictionary<string, KRnDVariant> variantDictionary, PartVariant partVariant, int i)
+        {
+            if (!variantDictionary.TryGetValue(partVariant.Name, out KRnDVariant variant))
+            {
+                KRnDVariant kRnDVariant = new KRnDVariant(partVariant.Name, partVariant.Mass);
+                variantDictionary.Add(partVariant.Name, kRnDVariant);
+            }
+            else
+            {
+                // This is a bit hacky. If under some conditions the dictionary already has 
+                // an entry with the given key, add a additional "~(i)" to its name.
+                // This is a workaround, as there's no (to me) known way to  
+                // identify a partVariant that is special to every variant on its own.
+                partVariant.Name = $"{partVariant.Name}~({i})";
+                KRnDVariant kRnDVariant = new KRnDVariant(partVariant.Name, partVariant.Mass);
+                variantDictionary.Add(partVariant.Name, kRnDVariant);
+            }
+        }
+
         // Checks if the given, generic part-module has a field with the given name:
         public static bool hasGenericModuleField(PartModule module, String fieldName)
         {
@@ -89,16 +108,14 @@ namespace KRnD
             {
                 Log.Info("Part: " + part.partInfo.title + ", " + part.partInfo.name +" has no variants");
                 return null;
-            }
+            }       
             Log.Info("Part: " + part.partInfo.title + ", " + part.partInfo.name + " has " + part.partInfo.Variants.Count + " variants");
 
             Dictionary<string, KRnDVariant> variants = new Dictionary<string, KRnDVariant>();
-
             for (int i = 0; i < part.partInfo.Variants.Count; i++)
             {
-                var partVariant = part.partInfo.Variants[i];
-                KRnDVariant v = new KRnDVariant(partVariant.Name, partVariant.Mass);
-                variants.Add(partVariant.Name, v);
+                var partVariant = part.partInfo.Variants[i];   
+                KRnD.AddVariant(variants, partVariant, i);
             }
             return variants;
         }
@@ -113,8 +130,7 @@ namespace KRnD
                 var partVariant = part.partInfo.Variants[i];
                 if (originalStats.kRnDVariants.TryGetValue(partVariant.Name, out KRnDVariant v) == false)
                 {
-                    v = new KRnDVariant(partVariant.Name, partVariant.Mass);
-                    originalStats.kRnDVariants.Add(partVariant.Name, v);
+                    KRnD.AddVariant(originalStats.kRnDVariants, partVariant, i);
                 }
                 v.UpdateMass(dryMassFactor);
                 
